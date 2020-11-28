@@ -22,8 +22,8 @@ public class Flink03_WordCount_UnBoundedStream {
         // 1.创建执行环境
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         // 2.读数据
-//        DataStreamSource<String> socketDS = env.socketTextStream("localhost", 9999);
-        DataStreamSource<String> socketDS = env.socketTextStream("hadoop102", 9999);
+        DataStreamSource<String> socketDS = env.socketTextStream("localhost", 9999);
+//        DataStreamSource<String> socketDS = env.socketTextStream("hadoop102", 9999);
 
         // 3.处理数据
         // 3.1 压平：切分、转换
