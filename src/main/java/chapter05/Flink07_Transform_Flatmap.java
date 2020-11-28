@@ -24,18 +24,12 @@ public class Flink07_Transform_Flatmap {
         env.setParallelism(1);
 
         // 2.读数据
-
         // TODO flatmap 压平：一进多出、一进零出
         // 1. 可以实现类似过滤的效果， 不满足条件，就不用采集器往下游发送
-        
-        env
-                .fromCollection(
-                        Arrays.asList(
-                                Arrays.asList(1, 2, 3),
-                                Arrays.asList(4, 5, 6),
-                                Arrays.asList(7, 8, 9)
 
-                        )
+        env
+                .fromElements(
+                        Arrays.asList(1, 2, 3, 4)
                 )
                 .flatMap(new FlatMapFunction<List<Integer>, String>() {
                     @Override
