@@ -34,12 +34,11 @@ public class Flink12_Transform_Connect {
                         String[] datas = value.split(",");
                         return new WaterSensor(datas[0], Long.valueOf(datas[1]), Integer.valueOf(datas[2]));
                     }
-                });
+                }).setParallelism(2);
 
         DataStreamSource<Integer> numDS = env.fromElements(1, 2, 3, 4);
 
         ConnectedStreams<WaterSensor, Integer> sensorNumCS = sensorDS.connect(numDS);
-
         //TODO connect 连接两条流
         // 1.只能连接 两条流
         // 2.两条流的 数据类型 可以 不一样
