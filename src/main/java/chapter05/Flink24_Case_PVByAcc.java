@@ -20,7 +20,7 @@ import org.apache.flink.util.Collector;
  * @version 1.0
  * @date 2020/11/30 10:51
  */
-public class Flink24_Case_PV {
+public class Flink24_Case_PVByAcc {
     public static void main(String[] args) throws Exception {
         //1.创建执行环境
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
