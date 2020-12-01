@@ -11,6 +11,7 @@ import java.util.Map;
 public class test {
     public static void main(String[] args) {
         Map<String, String> map = new HashMap<>();
+        map.put(null, "a");
         String s = map.get(null);
         System.out.println(s+"---"+s.getClass());
 //        System.out.println(map.containsKey(null));
