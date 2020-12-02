@@ -3,6 +3,8 @@ package chapter06;
 import bean.WaterSensor;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.functions.MapFunction;
+import org.apache.flink.api.common.state.*;
+import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
@@ -16,7 +18,7 @@ import org.apache.flink.util.Collector;
  * @version 1.0
  * @date 2020/12/1 8:54
  */
-public class Flink20_ProcessFunction_TimerTest {
+public class Flink24_State_KeyedDemo {
     public static void main(String[] args) throws Exception {
         // 1.创建执行环境
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
@@ -40,36 +42,35 @@ public class Flink20_ProcessFunction_TimerTest {
                 );
 
         // TODO
-
-        socketDS
+        SingleOutputStreamOperator<String> resultDS = socketDS
                 .keyBy(r -> r.getId())
                 .process(
                         new KeyedProcessFunction<String, WaterSensor, String>() {
+                            // TODO 1.定义状态
+                            ValueState<Integer> valueState ;
+                            Integer lastvc = 0;
+
                             @Override
-                            public void processElement(WaterSensor value, Context ctx, Collector<String> out) throws Exception {
-//                            //
-                                long time = 1549044122000L + 5000L;
-                                if (ctx.timestamp() <= time) {
-                                    ctx.timerService().registerEventTimeTimer(time);
-                                    System.out.println("注册了一个定时器，ts=" + time + ",key=" + ctx.getCurrentKey());
-                                }
+                            public void open(Configuration parameters) throws Exception {
+                                // TODO 2.在 open 里面 创建状态
+                                valueState = getRuntimeContext().getState(new ValueStateDescriptor<Integer>("value-state", Integer.class));
                             }
 
-                            /**
-                             * // TODO 2.定义 onTimer 方法 - 定时器触发 之后 的处理逻辑
-                             * @param timestamp 定时器触发的时间，也就是 定的那个时间
-                             * @param ctx   上下文
-                             * @param out   采集器
-                             * @throws Exception
-                             */
                             @Override
-                            public void onTimer(long timestamp, OnTimerContext ctx, Collector<String> out) throws Exception {
-//                                System.out.println("定时器触发了, onTimer ts = " + new Timestamp(timestamp));
-                                System.out.println("定时器触发了, onTimer ts = " + timestamp + ",key=" + ctx.getCurrentKey());
+                            public void processElement(WaterSensor value, Context ctx, Collector<String> out) throws Exception {
+                                // TODO 使用 键控状态 保存上一次的水位值 => 分组之间是隔离
+//                                out.collect("key="+ctx.getCurrentKey()+",上一次的水位值="+valueState.value());
+                                // 把 水位值 更新到 状态里
+//                                valueState.update(value.getVc());
+
+                                // TODO 如果使用的是变量 来 保存上一次水位值
+                                out.collect("key="+ctx.getCurrentKey()+",上一次的水位值="+lastvc);
+                                lastvc = value.getVc();
                             }
                         }
-                )
-                .print();
+                );
+
+        resultDS.print();
 
 
         env.execute();

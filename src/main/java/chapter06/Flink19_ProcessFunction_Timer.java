@@ -57,7 +57,8 @@ public class Flink19_ProcessFunction_Timer {
 
                                 //TODO 定时器 注册 and 触发 源码分析（事件时间的定时器）
 //                                	=> 1、注册 eventTimeTimersQueue.add(new TimerHeapInternalTimer<>(time, (K) keyContext.getCurrentKey(), namespace));
-//		                                    =》 为了避免重复注册、重复创建对象，注册定时器的时候，判断一下是否已经注册过了
+//		                                    => 队列添加的时候，会进行去重，如果是同一组，重复注册了相同时间的定时器，只会添加一个到队列里
+//                                          => 每个分组是隔离的， 即使注册的时间是相同的，但是每个分组照样有一个
 //
 //                                 =>  2、触发 timer.getTimestamp() <= time ==========> 定时的时间 <= watermark
 

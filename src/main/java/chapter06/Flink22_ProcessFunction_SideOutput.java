@@ -8,6 +8,7 @@ import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.KeyedProcessFunction;
 import org.apache.flink.util.Collector;
+import org.apache.flink.util.OutputTag;
 
 /**
  * TODO
@@ -16,7 +17,7 @@ import org.apache.flink.util.Collector;
  * @version 1.0
  * @date 2020/12/1 8:54
  */
-public class Flink20_ProcessFunction_TimerTest {
+public class Flink22_ProcessFunction_SideOutput {
     public static void main(String[] args) throws Exception {
         // 1.创建执行环境
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
@@ -40,36 +41,40 @@ public class Flink20_ProcessFunction_TimerTest {
                 );
 
         // TODO
+        OutputTag<String> alarmTag = new OutputTag<String>("alarm") {
+        };
 
-        socketDS
+        SingleOutputStreamOperator<WaterSensor> resultDS = socketDS
                 .keyBy(r -> r.getId())
                 .process(
-                        new KeyedProcessFunction<String, WaterSensor, String>() {
-                            @Override
-                            public void processElement(WaterSensor value, Context ctx, Collector<String> out) throws Exception {
-//                            //
-                                long time = 1549044122000L + 5000L;
-                                if (ctx.timestamp() <= time) {
-                                    ctx.timerService().registerEventTimeTimer(time);
-                                    System.out.println("注册了一个定时器，ts=" + time + ",key=" + ctx.getCurrentKey());
-                                }
-                            }
+                        new KeyedProcessFunction<String, WaterSensor, WaterSensor>() {
 
                             /**
-                             * // TODO 2.定义 onTimer 方法 - 定时器触发 之后 的处理逻辑
-                             * @param timestamp 定时器触发的时间，也就是 定的那个时间
-                             * @param ctx   上下文
-                             * @param out   采集器
+                             * 当水位高于 5的时候，告警输出到 侧输出流
+                             * @param value
+                             * @param ctx
+                             * @param out
                              * @throws Exception
                              */
                             @Override
-                            public void onTimer(long timestamp, OnTimerContext ctx, Collector<String> out) throws Exception {
-//                                System.out.println("定时器触发了, onTimer ts = " + new Timestamp(timestamp));
-                                System.out.println("定时器触发了, onTimer ts = " + timestamp + ",key=" + ctx.getCurrentKey());
+                            public void processElement(WaterSensor value, Context ctx, Collector<WaterSensor> out) throws Exception {
+                                //判断 水位值
+                                if (value.getVc() > 5) {
+                                    // 告警输出到侧输出流
+//                                    OutputTag<String> alarmTag = new OutputTag<String>("alarm") {
+////                                    };
+                                    ctx.output(alarmTag, "监测到水位值超过 5cm！！！！");
+                                }
+                                out.collect(value);
                             }
                         }
-                )
-                .print();
+                );
+
+
+        resultDS.print("result");
+//        OutputTag<String> alarmTag = new OutputTag<String>("alarm") {
+//        };
+        resultDS.getSideOutput(alarmTag).print("alarm");
 
 
         env.execute();
