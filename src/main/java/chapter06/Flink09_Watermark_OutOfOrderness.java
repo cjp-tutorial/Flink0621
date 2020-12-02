@@ -52,7 +52,6 @@ public class Flink09_Watermark_OutOfOrderness {
                 .sum("vc")
                 .print();
 
-
         env.execute();
     }
 }

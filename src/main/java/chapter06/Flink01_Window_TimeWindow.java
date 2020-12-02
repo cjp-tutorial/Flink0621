@@ -7,6 +7,7 @@ import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.windowing.assigners.ProcessingTimeSessionWindows;
 import org.apache.flink.streaming.api.windowing.assigners.SlidingProcessingTimeWindows;
+import org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindows;
 import org.apache.flink.streaming.api.windowing.assigners.TumblingProcessingTimeWindows;
 import org.apache.flink.streaming.api.windowing.time.Time;
 
@@ -46,7 +47,8 @@ public class Flink01_Window_TimeWindow {
         socketKS
 //                .timeWindow(Time.seconds(5))    // 滚动窗口
 //                .window(TumblingProcessingTimeWindows.of(Time.seconds(5)))
-//                .timeWindow(Time.seconds(5),Time.seconds(2))    // 滑动窗口： 第一个参数 窗口长度，第二个参数 滑动步长
+//                .window(TumblingEventTimeWindows.of(Time.seconds(5)))
+                .timeWindow(Time.seconds(5),Time.seconds(2))    // 滑动窗口： 第一个参数 窗口长度，第二个参数 滑动步长
 //                .window(SlidingProcessingTimeWindows.of(Time.seconds(5), Time.seconds(2)))
 //                .window(ProcessingTimeSessionWindows.withGap(Time.seconds(3)))  // 会话窗口，参数是 时间间隔
                 .sum(1)

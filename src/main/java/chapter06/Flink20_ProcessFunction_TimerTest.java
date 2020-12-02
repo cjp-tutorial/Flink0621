@@ -6,9 +6,7 @@ import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.streaming.api.functions.windowing.ProcessWindowFunction;
-import org.apache.flink.streaming.api.windowing.time.Time;
-import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
+import org.apache.flink.streaming.api.functions.KeyedProcessFunction;
 import org.apache.flink.util.Collector;
 
 /**
@@ -18,20 +16,13 @@ import org.apache.flink.util.Collector;
  * @version 1.0
  * @date 2020/12/1 8:54
  */
-public class Flink15_Watermark_FileIssue {
+public class Flink20_ProcessFunction_TimerTest {
     public static void main(String[] args) throws Exception {
         // 1.创建执行环境
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         env.setParallelism(1);
         env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
 
-        // TODO 读文件的问题
-        // flink会在 文件读取结束之后， 把 watermark 设置为 Long的最大值
-        //  => 为了保证所有的 窗口都被触发， 所有的数据都被计算
-
-        // TODO 为什么所有窗口一起触发？
-        //  => 因为 watermark 周期是200ms生成一次，默认值是 Long的最小值
-        //  => 读取完文件，还不够200ms，没有窗口触发， 结束的时候，watermark被设置为 Long的最大值，一下子所有窗口都触发
         SingleOutputStreamOperator<WaterSensor> socketDS = env
 //                .readTextFile("input/sensor-data.log")
                 .socketTextStream("localhost", 9999)
@@ -48,23 +39,38 @@ public class Flink15_Watermark_FileIssue {
                                 .withTimestampAssigner((sensor, recordTs) -> sensor.getTs() * 1000L)
                 );
 
+        // TODO
+
         socketDS
                 .keyBy(r -> r.getId())
-                .timeWindow(Time.seconds(5))
                 .process(
-                        new ProcessWindowFunction<WaterSensor, String, String, TimeWindow>() {
+                        new KeyedProcessFunction<String, WaterSensor, String>() {
                             @Override
-                            public void process(String s, Context context, Iterable<WaterSensor> elements, Collector<String> out) throws Exception {
-                                out.collect("======================================="
-                                        + "\nkey=" + s
-                                        + "\n当前窗口是[" + context.window().getStart() + "," + context.window().getEnd() + ")"
-                                        + "\n一共有" + elements.spliterator().estimateSize() + "条数据"
-                                        + "\nwatermark=" + context.currentWatermark()
-                                        + "\n======================================\n\n");
+                            public void processElement(WaterSensor value, Context ctx, Collector<String> out) throws Exception {
+//                            //
+                                long time = 1549044122000L + 5000L;
+                                if (ctx.timestamp() <= time) {
+                                    ctx.timerService().registerEventTimeTimer(time);
+                                    System.out.println("注册了一个定时器，ts=" + time);
+                                }
+                            }
+
+                            /**
+                             * // TODO 2.定义 onTimer 方法 - 定时器触发 之后 的处理逻辑
+                             * @param timestamp 定时器触发的时间，也就是 定的那个时间
+                             * @param ctx   上下文
+                             * @param out   采集器
+                             * @throws Exception
+                             */
+                            @Override
+                            public void onTimer(long timestamp, OnTimerContext ctx, Collector<String> out) throws Exception {
+//                                System.out.println("定时器触发了, onTimer ts = " + new Timestamp(timestamp));
+                                System.out.println("定时器触发了, onTimer ts = " + timestamp);
                             }
                         }
                 )
                 .print();
+
 
         env.execute();
     }
