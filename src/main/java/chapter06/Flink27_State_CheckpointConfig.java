@@ -7,6 +7,7 @@ import org.apache.flink.contrib.streaming.state.RocksDBStateBackend;
 import org.apache.flink.runtime.state.StateBackend;
 import org.apache.flink.runtime.state.filesystem.FsStateBackend;
 import org.apache.flink.runtime.state.memory.MemoryStateBackend;
+import org.apache.flink.streaming.api.CheckpointingMode;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.BroadcastConnectedStream;
 import org.apache.flink.streaming.api.datastream.BroadcastStream;
@@ -22,26 +23,22 @@ import org.apache.flink.util.Collector;
  * @version 1.0
  * @date 2020/12/1 8:54
  */
-public class Flink26_State_StateBackend {
+public class Flink27_State_CheckpointConfig {
     public static void main(String[] args) throws Exception {
         // 1.创建执行环境
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         env.setParallelism(1);
         env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
 
-        // TODO 状态后端的使用
-        // 1. MemoryStateBackend的使用
-        StateBackend memoryStateBackend = new MemoryStateBackend();
-        env.setStateBackend(memoryStateBackend);
-        // 2. FsStateBackend的使用
-        StateBackend fsStateBackend = new FsStateBackend("hdfs://host:port/xxx/xxx/xxx");
-        env.setStateBackend(fsStateBackend);
-        // 3. RocksDBStateBackend的使用 （需要 导入 依赖）
-        StateBackend rocksDBStateBackend = new RocksDBStateBackend("hdfs://{fs.defaultFS}/xxx/xxx/xxx");
-        env.setStateBackend(rocksDBStateBackend);
+        // TODO Checkpoint设置
+//        env.enableCheckpointing(5000L,CheckpointingMode.EXACTLY_ONCE);
+        env.enableCheckpointing(5000L);
+        env.getCheckpointConfig().setCheckpointingMode(CheckpointingMode.EXACTLY_ONCE);
+        env.getCheckpointConfig().setMaxConcurrentCheckpoints(2);				// 异步ck，同时有几个ck在执行
+        env.getCheckpointConfig().setMinPauseBetweenCheckpoints(500L);		// 上一个ck结束后，到下一个ck开启，最小间隔多久
+        env.getCheckpointConfig().setPreferCheckpointForRecovery(false);		// 默认为 false，表示从 ck恢复；true，从savepoint恢复
+        env.getCheckpointConfig().setTolerableCheckpointFailureNumber(3);		// 允许当前checkpoint失败的次数
 
-        // TODO 要使用状态后端，一定要开启checkpoint
-        env.enableCheckpointing(111111L);
 
         // 一条流A
         DataStreamSource<String> inputDS = env.socketTextStream("localhost", 9999);
