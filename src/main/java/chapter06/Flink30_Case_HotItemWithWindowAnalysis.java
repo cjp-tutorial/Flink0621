@@ -67,7 +67,7 @@ public class Flink30_Case_HotItemWithWindowAnalysis {
         // 3.2 按照 统计维度（商品） 分组
         KeyedStream<UserBehavior, Long> userBehaviorKS = filterDS.keyBy(r -> r.getItemId());
         // 3.3 按照要求开窗: 每5分钟输出最近1小时 => 滑动窗口，长度 1小时， 步长 5分钟
-        WindowedStream<UserBehavior, Long, TimeWindow> userBehaviorWS = userBehaviorKS.timeWindow(Time.hours(1), Time.minutes(5));
+        WindowedStream<UserBehavior, Long, TimeWindow> userBehaviorWS = userBehaviorKS.timeWindow(Time.hours(1), Time.seconds(5));
         // 3.4 统计、排序、取前 N个
         // 转成 （商品ID，1），用 sum求和 => 怎么排序？
         // reduce？ => 类型限制， 即使可以求和，怎么排序？
