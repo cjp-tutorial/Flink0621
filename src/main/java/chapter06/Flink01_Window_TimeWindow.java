@@ -48,9 +48,9 @@ public class Flink01_Window_TimeWindow {
 //                .timeWindow(Time.seconds(5))    // 滚动窗口
 //                .window(TumblingProcessingTimeWindows.of(Time.seconds(5)))
 //                .window(TumblingEventTimeWindows.of(Time.seconds(5)))
-                .timeWindow(Time.seconds(5),Time.seconds(2))    // 滑动窗口： 第一个参数 窗口长度，第二个参数 滑动步长
+//                .timeWindow(Time.seconds(5),Time.seconds(2))    // 滑动窗口： 第一个参数 窗口长度，第二个参数 滑动步长
 //                .window(SlidingProcessingTimeWindows.of(Time.seconds(5), Time.seconds(2)))
-//                .window(ProcessingTimeSessionWindows.withGap(Time.seconds(3)))  // 会话窗口，参数是 时间间隔
+                .window(ProcessingTimeSessionWindows.withGap(Time.seconds(3)))  // 会话窗口，参数是 时间间隔
                 .sum(1)
                 .print();
 
