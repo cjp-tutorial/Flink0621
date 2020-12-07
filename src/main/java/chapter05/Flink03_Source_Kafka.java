@@ -26,12 +26,25 @@ public class Flink03_Source_Kafka {
         properties.setProperty("group.id", "aaaaaa");
 
 
+        //TODO
+        // kafka 的offset 保存在 Source算子的状态
+        // kafka不知道offset更新到哪，用一些监控kafka的工具，看不到offset的进展
+        // setCommitOffsetsOnCheckpoints设为 true， 会同步一份给kafka，就可以看到了
         DataStreamSource<String> kafkaSource = env.addSource(
                 new FlinkKafkaConsumer011<String>(
                         "sensor0621",
                         new SimpleStringSchema(),
-                        properties).setStartFromEarliest()
+                        properties)
+                        .setStartFromEarliest()
+                        .setCommitOffsetsOnCheckpoints(true)
+
         );
+
+        //TODO sink到文件，怎么使用 2pc
+        // 开启事务 ：创建一个临时文件
+        // 预提交 ： 往 临时文件 写入数据
+        // 正式提交： 把临时文件，改名成正式名字
+        // 回滚：     把临时文件删除
 
         kafkaSource.print();
 
