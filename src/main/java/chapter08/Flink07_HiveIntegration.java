@@ -3,6 +3,7 @@ package chapter08;
 import bean.WaterSensor;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.functions.MapFunction;
+import org.apache.flink.api.java.tuple.Tuple;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.streaming.api.TimeCharacteristic;
@@ -36,13 +37,20 @@ public class Flink07_HiveIntegration {
 
         StreamTableEnvironment tableEnv = StreamTableEnvironment.create(env);
 
-        DataStreamSource<Tuple3<String, String, Integer>> inputDS = env.fromElements(
+/*        DataStreamSource<Tuple3<String, String, Integer>> inputDS = env.fromElements(
                 Tuple3.of("1", "ergou", 18),
                 Tuple3.of("2", "gousheng", 19),
                 Tuple3.of("3", "goudan", 20)
-        );
+        );*/
 
-        tableEnv.createTemporaryView("inputTable", inputDS);
+        SingleOutputStreamOperator<Tuple3<String, String, Integer>> inputDS = env.socketTextStream("localhost", 9999)
+                .map(new MapFunction<String, Tuple3<String, String, Integer>>() {
+                    @Override
+                    public Tuple3<String, String, Integer> map(String value) throws Exception {
+                        String[] datas = value.split(",");
+                        return Tuple3.of(datas[0], datas[1], Integer.valueOf(datas[2]));
+                    }
+                });
 
 
         // TODO 2.FlinkSQL 集成 Hive
@@ -64,8 +72,12 @@ public class Flink07_HiveIntegration {
         tableEnv.getConfig().setSqlDialect(SqlDialect.HIVE);
 
         // TODO 5、使用 sql操作hive表
+        tableEnv.createTemporaryView("inputTable", inputDS);
         tableEnv.executeSql("insert into test select * from inputTable");
 
+
+        Table queryTable = tableEnv.sqlQuery("select * from test");
+        tableEnv.toAppendStream(queryTable, Row.class).print();
 
         env.execute();
     }

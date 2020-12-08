@@ -3,8 +3,6 @@ package chapter08;
 import bean.WaterSensor;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.functions.MapFunction;
-import org.apache.flink.api.common.typeinfo.TypeHint;
-import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.DataStream;
@@ -25,7 +23,7 @@ import static org.apache.flink.table.api.Expressions.$;
  * @version 1.0
  * @date 2020/12/8 9:21
  */
-public class Flink04_SQL_API {
+public class Flink08_SQL_Explain {
     public static void main(String[] args) throws Exception {
         // 1.创建流执行环境
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
@@ -51,24 +49,19 @@ public class Flink04_SQL_API {
         // TODO SQL基本使用
         // TODO 1.创建 表的执行环境
         StreamTableEnvironment tableEnv = StreamTableEnvironment.create(env);
-        // TODO 2.将 流 转换成 动态表
-/*        Table sensorTable = tableEnv.fromDataStream(sensorDS, $("ts"), $("id"), $("vc").as("ergou"));
-        // 给 Table对象 起 表名
-        tableEnv.createTemporaryView("sensor", sensorTable);*/
 
-        // 还可以一步到位，直接 把DataStream 变成 Table，并且起一个名字
-        tableEnv.createTemporaryView("sensor", sensorDS,$("id"),$("ts"),$("vc"));
-        // TODO 可以通过名字 获取 Table对象
-        Table sensorTable = tableEnv.from("sensor");
+        // TODO 2.将 流 转换成 动态表
+        tableEnv.createTemporaryView("sensor", sensorDS, $("id"), $("ts"), $("vc"));
+
         // TODO 3.使用 SQL 对 动态表 进行操作,返回一个 结果表
         Table resultTable = tableEnv
-//                .sqlQuery("select * from " + sensorTable);
-                .sqlQuery("select * from sensor");
+                .sqlQuery("select * from sensor where id='sensor_1'"); // 条件查询
 
         // TODO 4.将 动态表 转换成 流，输出
-        DataStream<Row> resultDS = tableEnv.toAppendStream(resultTable, Row.class);
+        DataStream<Tuple2<Boolean, Row>> resultDS = tableEnv.toRetractStream(resultTable, Row.class);
 
-        resultDS.print();
+//        resultDS.print();
+        System.out.println(tableEnv.explain(resultTable));
 
         env.execute();
     }
